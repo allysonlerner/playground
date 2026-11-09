@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snappy gift picker</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --text: #1f2328; --muted: #656d76; --line: #e3e3df;
+  --accent: #2b5fd9; --accent-bg: #e9efff; --danger: #b42318; --danger-bg: #fdecea; --ok: #1a7f37;
+  --shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #16181b; --panel: #1e2125; --text: #e6e8ea; --muted: #9aa3ad; --line: #2e3238;
+    --accent: #7aa2ff; --accent-bg: #23304f; --danger: #ff8a80; --danger-bg: #3a2220; --ok: #56d364; --shadow: none; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 18px; font-size: 14px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.tabs { display: flex; gap: 4px; background: var(--line); padding: 3px; border-radius: 10px; }
+.tab { border: 0; background: transparent; color: var(--muted); padding: 8px 14px; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+.tab .n { margin-left: 6px; font-weight: 500; color: var(--muted); }
+.spacer { flex: 1; }
+input[type=search], select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); }
+input[type=search] { min-width: 200px; }
+.btn { font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; text-transform: none; color: var(--muted); font-weight: 600; background: var(--panel); position: sticky; top: 0; white-space: nowrap; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text); }
+th .arr { margin-left: 4px; opacity: .35; }
+th[aria-sort] .arr { opacity: 1; color: var(--accent); }
+td.cat { color: var(--muted); font-size: 13px; width: 130px; }
+td.img { width: 84px; }
+td.img img { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 8px; border: 1px solid var(--line); display: block; }
+td.type { font-weight: 600; width: 150px; }
+td.type a { color: inherit; text-decoration: none; }
+td.type a:hover { color: var(--accent); text-decoration: underline; }
+td.desc { color: var(--text); }
+td.price { white-space: nowrap; font-variant-numeric: tabular-nums; width: 90px; }
+td.price .est { color: var(--muted); }
+td.act { width: 150px; text-align: right; }
+.mv { font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; white-space: nowrap; }
+.mv.no:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); }
+.mv.yes:hover { border-color: var(--ok); color: var(--ok); }
+.empty { padding: 36px; text-align: center; color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; margin-top: 12px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); width: min(560px, 92vw); }
+dialog textarea { width: 100%; height: 260px; font: 13px/1.4 ui-monospace, Menlo, monospace; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+@media (max-width: 720px) {
+  thead { display: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  tr { display: grid; grid-template-columns: 76px 1fr auto; gap: 2px 12px; padding: 12px; border-bottom: 1px solid var(--line); }
+  td { border: 0; padding: 0; width: auto !important; }
+  td.img { grid-row: 1 / span 4; }
+  td.cat { grid-column: 2 / span 2; font-size: 12px; }
+  td.type { grid-column: 2; }
+  td.price { grid-column: 3; text-align: right; }
+  td.desc { grid-column: 2 / span 2; font-size: 14px; }
+  td.act { grid-column: 2 / span 2; text-align: left; margin-top: 6px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Snappy gift picker</h1>
+  <p class="sub">Everything starts in Want. Move items you rule out to Don't want. You can move them back any time.</p>
+
+  <div class="bar">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-want" aria-selected="true">Want<span class="n" id="n-want"></span></button>
+      <button class="tab" role="tab" id="tab-dont" aria-selected="false">Don't want<span class="n" id="n-dont"></span></button>
+    </div>
+    <div class="spacer"></div>
+    <input type="search" id="q" placeholder="Search items" aria-label="Search items">
+    <select id="cat" aria-label="Filter by category"><option value="">All categories</option></select>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-k="cat">Category<span class="arr">&#8597;</span></th>
+          <th>Image</th>
+          <th class="sortable" data-k="type">Item<span class="arr">&#8597;</span></th>
+          <th class="sortable" data-k="desc">Description<span class="arr">&#8597;</span></th>
+          <th class="sortable" data-k="price">Price<span class="arr">&#8597;</span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+  <p class="note">Prices are ballpark retail figures, not exact. A "~" means it is an estimate. Hover a price for details. Your picks are saved in this browser only.</p>
+</div>
+
+
+<script>
+const DATA = [{"id": 1, "cat": "Donations", "brand": "Change", "name": "Donate to the Westgate Foundation", "type": "Donation", "desc": "Donate your gift to The Westgate Foundation through Change", "price": null, "conf": "", "note": "", "tag": "Donation option", "img": "r3oa76vrsjgerwlj6bzlif_picture-1.png"}, {"id": 2, "cat": "Sports, outdoors & hobbies", "brand": "adidas", "name": "Adidas Unisex Pro Firm Ground | Soccer Cleats", "type": "Soccer cleats", "desc": "Adidas Predator Pro firm-ground soccer cleats, unisex, multiple sizes and colors", "price": 250.0, "conf": "approx", "note": "No exact \"Pro\" model match found; adidas Predator Pro/F50 Pro vary $160-$250", "tag": "", "img": "ocwlhvqqvsrgxx8is3s2"}, {"id": 3, "cat": "Sports, outdoors & hobbies", "brand": "K2", "name": "K2 Alexis Ice Womens Ice Skates", "type": "Ice skates", "desc": "Women's recreational ice skates built for comfort and support", "price": 109.95, "conf": "approx", "note": "K2 site showed 2022 model at 44.98 (was 89.95); another retailer 109.95", "tag": "", "img": "ykz2txobprmbn1yyxjht"}, {"id": 4, "cat": "Home, cleaning & tools", "brand": "De'Longhi", "name": "De'Longhi 28 Inch Tower Digital Ceramic Heater", "type": "Space heater", "desc": "28-inch oscillating tower ceramic heater with digital controls and 24-hour timer", "price": 84.95, "conf": "verified", "note": "Model HFX66V15C; Best Buy says no longer sold new; Farm and Fleet about 50.88", "tag": "", "img": "mie4isvs9fwtybcazdh9"}, {"id": 5, "cat": "TV, audio & gaming", "brand": "INSIGNIA", "name": "Insignia 40\" Class F40 Series LED Full HD Smart Fire TV", "type": "Smart TV", "desc": "40-inch Full HD Fire TV with Alexa voice control", "price": 119.99, "conf": "verified", "note": "119.99 matches", "tag": "", "img": "ac8r5qhlffqp4lxmpl6y"}, {"id": 6, "cat": "TV, audio & gaming", "brand": "HyperX", "name": "HyperX QuadCast 2 Wired Multi-Pattern USB Electret Condenser Microphone", "type": "USB microphone", "desc": "Multi-pattern USB condenser mic with tap-to-mute and RGB lighting for streaming", "price": 115.99, "conf": "verified", "note": "HP/HyperX Ireland page, no US price seen", "tag": "", "img": "grphtpumjfx8nylqykyy"}, {"id": 7, "cat": "Home, cleaning & tools", "brand": "Blueair", "name": "Blueair 1 Gallon Top-fill Evaporative Mist Humidifier", "type": "Humidifier", "desc": "1-gallon top-fill evaporative humidifier with mist-free design", "price": 129.99, "conf": "verified", "note": "129.99 matches", "tag": "", "img": "b32y2okk8rtuo17oouwf"}, {"id": 8, "cat": "Kitchen appliances", "brand": "INSIGNIA", "name": "Insignia 1.1 Cu. Ft. Countertop Microwave - Stainless Steel", "type": "Microwave", "desc": "1.1 cu. ft., 1000W countertop microwave in stainless steel", "price": 89.99, "conf": "verified", "note": "89.99 matches", "tag": "", "img": "ck9jsjwcp6rs10c3vyvz"}, {"id": 9, "cat": "Cameras & smart gadgets", "brand": "Supersonic", "name": "Supersonic VisionEdge Smart AI Glasses with Assistant & Camera", "type": "Smart glasses", "desc": "Smart glasses with 8MP camera, speakers and voice assistant", "price": null, "conf": "unknown", "note": "No price seen", "tag": "", "img": "qbabp09gevy9j4bdyclc"}, {"id": 10, "cat": "Cookware & cutlery", "brand": "Shun", "name": "Shun DM0882 20 Slot Chef's Knife Case", "type": "Knife case", "desc": "20-slot case for storing and carrying chef's knives", "price": 144.0, "conf": "verified", "note": "One US listing showed 114.95 vs 144.00", "tag": "", "img": "wnq2hf1pm5vxfjrw85of"}, {"id": 11, "cat": "Home, cleaning & tools", "brand": "Porter Cable", "name": "Porter Cable 20V MAX Drill/Driver with Lithium-ion Technology", "type": "Drill/driver", "desc": "20V cordless drill/driver with lithium-ion battery", "price": 59.0, "conf": "approx", "note": "Listed 129.00 vs 59.00 (brushless kit; other retailers about 129.99)", "tag": "", "img": "ueusjuxte9xlcvgzn3ls"}, {"id": 12, "cat": "TV, audio & gaming", "brand": "Dell", "name": "Dell SE2426HS 24\" IPS LCD FHD 144Hz FreeSync Monitor", "type": "Monitor", "desc": "24-inch Full HD IPS monitor, 144Hz with FreeSync", "price": 119.99, "conf": "verified", "note": "119.99 matches", "tag": "", "img": "jcshmphthhgfqvtgnhuk"}, {"id": 13, "cat": "Kitchen appliances", "brand": "CUCKOO", "name": "CUCKOO 5L Hot Water Dispenser & Warmer", "type": "Hot water dispenser", "desc": "5-liter stainless steel hot water dispenser and warmer", "price": 139.99, "conf": "verified", "note": "Target listed around 139.99 per search summary; not fetched", "tag": "", "img": "r0qyzc8j9rccf3ibspd5"}, {"id": 14, "cat": "Cookware & cutlery", "brand": "Farberware", "name": "Farberware Glide 12pc Nonstick Aluminum Cookware Set, Copper", "type": "Cookware set", "desc": "12-piece copper nonstick aluminum cookware set", "price": 109.99, "conf": "verified", "note": "109.99 on brand site (matches)", "tag": "", "img": "dfogomsfw0wky1cyi6fj"}, {"id": 15, "cat": "Cameras & smart gadgets", "brand": "Canon", "name": "Canon IVY 2 Mini Photo Printer", "type": "Photo printer", "desc": "Pocket-size ZINK instant photo printer", "price": 79.99, "conf": "verified", "note": "Blush Pink variant page; Canon USA product page not found; price not seen", "tag": "", "img": "lpcio1iahnmgxhydrres"}, {"id": 16, "cat": "Bags, travel & accessories", "brand": "Thule", "name": "Thule Gauntlet Attache/Case", "type": "Laptop case", "desc": "Rugged protective attache case for a laptop", "price": 104.95, "conf": "verified", "note": "Gauntlet 4.0 14in model at 104.95 (matches); Thule has newer Gauntlet 5 at 119.95 CAD", "tag": "", "img": "u5oyaq3lvoos9u83oqp4"}, {"id": 17, "cat": "TV, audio & gaming", "brand": "Crosley", "name": "Powel 7-In-1 Record Player", "type": "Record player", "desc": "7-in-1 turntable with AM/FM radio, CD player and Bluetooth", "price": 147.87, "conf": "verified", "note": "EU site shows 169 EUR; US brand page not found", "tag": "", "img": "tt2jqkkepeavgmgctmmv"}, {"id": 18, "cat": "Home, cleaning & tools", "brand": "Bissell", "name": "BISSELL PowerClean Corded Stick Vacuum", "type": "Stick vacuum", "desc": "Corded 3-in-1 stick vacuum with LED headlights and tangle-free brush", "price": 139.0, "conf": "verified", "note": "Retailers list about 139.99, one sale 119.99; Kohl's price not seen", "tag": "", "img": "d0b9neoqpdr794jfjcfm"}, {"id": 19, "cat": "TV, audio & gaming", "brand": "Plantronics", "name": "Poly EncorePro HW520 Headset", "type": "Headset", "desc": "Wired on-ear office headset with quick disconnect", "price": 79.9, "conf": "verified", "note": "One US listing showed 117.04 sale vs 79.90 in chunk; several part numbers exist", "tag": "", "img": "gcnzgocm1xtmbtsklzj4"}, {"id": 20, "cat": "Kitchen appliances", "brand": "Cuisinart", "name": "Cuisinart Compact Air Fryer Toaster Oven", "type": "Air fryer oven", "desc": "Compact countertop air fryer toaster oven that bakes, broils and toasts", "price": 149.95, "conf": "verified", "note": "149.95 (matches); Williams Sonoma showed 129.95", "tag": "", "img": "eshxayrlybnpqsdaez7x"}, {"id": 21, "cat": "Kitchen appliances", "brand": "Nespresso", "name": "Nespresso Vertuo Pop+ Coffee and Espresso Maker by De'Longhi", "type": "Coffee maker", "desc": "Compact coffee and espresso maker with multiple cup sizes", "price": 129.0, "conf": "verified", "note": "Price not seen; retailers range 89 to 134", "tag": "", "img": "uzrdpslnzpqv4mgxydsb"}, {"id": 22, "cat": "Home, cleaning & tools", "brand": "Bissell", "name": "Bissell PowerFresh Steam Mop", "type": "Steam mop", "desc": "Deluxe steam mop with SpotBOOST brush for hard floors", "price": 99.99, "conf": "verified", "note": "Kohl's listed 119.99 vs 99.99 in chunk; Amazon cited 92.69", "tag": "", "img": "mn1az2lu359v8ewxkcohk9_picture-1.jpg"}, {"id": 23, "cat": "Kitchen appliances", "brand": "Zulay Kitchen", "name": "Zulay Kitchen Cold Press Slow Masticating Juicer", "type": "Juicer", "desc": "Cold press slow masticating juicer with extra-wide 5-inch chute", "price": 129.99, "conf": "verified", "note": "129.99 (matches); Zulay site shows 149 on sale from 199", "tag": "Latinx-Owned", "img": "uopkheyeoiqibixtcabr"}, {"id": 24, "cat": "Home, cleaning & tools", "brand": "Supersonic", "name": "Supersonic Robot Vacuum with Dry Mop", "type": "Robot vacuum", "desc": "Low-profile robot vacuum with dry mop", "price": 96.99, "conf": "verified", "note": "SC-820SV; price not seen here; Newegg listings 80.99 to 96.99", "tag": "", "img": "zb86kkschkdyycmep6nm"}, {"id": 25, "cat": "TV, audio & gaming", "brand": "SCUF", "name": "SCUF Valor Pro Wired Performance Controller", "type": "Game controller", "desc": "Wired Xbox/PC controller with anti-drift Hall effect thumbsticks", "price": 85.0, "conf": "approx", "note": "Corsair page lists $44.99 (Revival Series); launch price was $99.99", "tag": "", "img": "e1rxmtlfhfkvqb3bouim"}, {"id": 26, "cat": "TV, audio & gaming", "brand": "KODAK", "name": "KODAK FLIK X10 Compact Home Theater Projector Kit", "type": "Projector", "desc": "Compact 1080p home theater projector kit", "price": 169.99, "conf": "verified", "note": "", "tag": "", "img": "ldcjjm5iqkonq4bjf9ts"}, {"id": 27, "cat": "Drinkware & entertaining", "brand": "Igloo", "name": "Igloo Portable Countertop Ice Maker", "type": "Ice maker", "desc": "Portable countertop ice maker, first ice in about 7 minutes", "price": 120.0, "conf": "approx", "note": "Igloo has no brand page for it; model ICEB26 (26 lb); listings seen range $79.99 to $139.99", "tag": "", "img": "fkq04scefsexm85ef0pv88_picture-1.jpg"}, {"id": 28, "cat": "Health, beauty & personal care", "brand": "Miko", "name": "MIKO Shiatsu Foot Massager", "type": "Foot massager", "desc": "Shiatsu foot massager with heat", "price": 160.0, "conf": "approx", "note": "Best Buy and Academy show $159.99", "tag": "Small Business", "img": "q3ok5za9zzrhs7s5rgr2"}, {"id": 29, "cat": "Kitchen appliances", "brand": "GreenLife", "name": "GreenLife Healthy 8qt Slow Cooker", "type": "Slow cooker", "desc": "8-quart slow cooker with removable pot", "price": 119.99, "conf": "verified", "note": "Target shows $119.99", "tag": "", "img": "nw0kxdtcd0bj6sea7sk1"}, {"id": 30, "cat": "Drinkware & entertaining", "brand": "QuickBite", "name": "8-Bottle Thermoelectric Wine Cellar", "type": "Wine cooler", "desc": "8-bottle countertop thermoelectric wine cellar", "price": 160.0, "conf": "approx", "note": "No QuickBite product found; only other brands returned", "tag": "", "img": "ttv33ctwqebxy52mbl0n"}, {"id": 31, "cat": "Cookware & cutlery", "brand": "Wusthof", "name": "Wusthof 5\" Classic Serrated Utility Knife", "type": "Kitchen knife", "desc": "5-inch serrated utility knife from the Classic line", "price": 115.0, "conf": "approx", "note": "Wusthof store shows $115.00", "tag": "", "img": "c5mcy8csuui1kfxopxnt"}, {"id": 32, "cat": "Kitchen appliances", "brand": "Braun", "name": "Braun EasyPrep 8 Cup Food Processor", "type": "Food processor", "desc": "8-cup food processor with 550W motor, two speeds and pulse", "price": 100.0, "conf": "approx", "note": "Braun shows $129.95 (FP3211SI)", "tag": "", "img": "bu5oljtzrz3htmofbyiq"}, {"id": 33, "cat": "TV, audio & gaming", "brand": "Singing Machine", "name": "Singing Machine Groove Disco Bluetooth Karaoke Machine with Disco Ball & LED Lights", "type": "Karaoke machine", "desc": "Bluetooth karaoke machine with disco ball and LED lights", "price": 129.99, "conf": "verified", "note": "Kohl's shows $129.99", "tag": "", "img": "sfnrjkhfqqrgd9g70ay4"}, {"id": 34, "cat": "Kitchen appliances", "brand": "Ninja", "name": "Ninja UltraCrush 1000W Professional Blender with Total Crushing Technology", "type": "Blender", "desc": "1000W blender with 72oz pitcher for ice, smoothies and sauces", "price": 109.99, "conf": "verified", "note": "SharkNinja shows $109.99", "tag": "", "img": "ea7idmzdpyggxx4bxola"}, {"id": 35, "cat": "Cameras & smart gadgets", "brand": "Betafresh", "name": "Betafresh Fader Hawk+ Drone", "type": "Drone", "desc": "Compact beginner-friendly quadcopter drone", "price": 60.0, "conf": "approx", "note": "Only app store pages found, no hardware product page", "tag": "", "img": "olqykvo1sdu3p7svytgi"}, {"id": 36, "cat": "Health, beauty & personal care", "brand": "RENPHO", "name": "RENPHO Power+ Thermacool Massage Gun", "type": "Massage gun", "desc": "Percussion massage gun with heat and cooling, 8 temperature settings", "price": 90.0, "conf": "approx", "note": "RENPHO shows $109.99 sale ($129.99 regular), some pages $119.99", "tag": "", "img": "qvhcdgzigtfiqaias1vl"}, {"id": 37, "cat": "Cameras & smart gadgets", "brand": "Insta360", "name": "Insta360 Flow 2 AI Tracker Bundle Gimbal Stabilizer for Smartphones", "type": "Phone gimbal", "desc": "AI-tracking smartphone gimbal stabilizer bundle for creators", "price": 129.99, "conf": "approx", "note": "Insta360 launch page lists Flow 2 AI Tracker Bundle at $129.99, matches. Direct store page for standard Flow 2 not seen.", "tag": "", "img": "fnghjoukemb8tomwbnar"}, {"id": 38, "cat": "Health, beauty & personal care", "brand": "Philips Sonicare", "name": "Philips Sonicare 6500 Series Rechargeable Electric Toothbrush HX7410/10", "type": "Electric toothbrush", "desc": "Rechargeable Sonicare 6500 sonic toothbrush", "price": 119.99, "conf": "verified", "note": "Best Buy shows about $129.99 to $137.99; Walmart about $119.96", "tag": "", "img": "goixrhflvukqjuqlyfs5"}, {"id": 39, "cat": "Bags, travel & accessories", "brand": "Quince", "name": "Quince Voyage Nylon Commuter Backpack", "type": "Backpack", "desc": "Water-repellent 400D nylon commuter backpack", "price": 118.0, "conf": "verified", "note": "Matches $118.00", "tag": "Sustainable", "img": "l3pkbvikybsedb2t4n1o"}, {"id": 40, "cat": "Cameras & smart gadgets", "brand": "Kenwood", "name": "Kenwood DRV-A310W 1080p Full HD Dashcam", "type": "Dashcam", "desc": "1080p dashcam with GPS and wireless link", "price": 119.99, "conf": "verified", "note": "EU site, no price shown in results. US retailer option: Best Buy https://www.bestbuy.com/product/kenwood-drv-a310w-1080p-full-hd-dashcam-with-gps-wireless-link-and-motion-detection-black/J722769LCJ", "tag": "", "img": "gd8nll2nyrvw96hqt4fu"}, {"id": 41, "cat": "Bags, travel & accessories", "brand": "Quince", "name": "Quince Expandable Small Carry-On Suitcase", "type": "Carry-on suitcase", "desc": "Expandable polycarbonate carry-on suitcase", "price": 139.9, "conf": "verified", "note": "Matches $139.90", "tag": "Sustainable", "img": "u6ka8kdeqn6jhlwqvjjd"}, {"id": 42, "cat": "Cookware & cutlery", "brand": "Cuisinart", "name": "Cuisinart Chef's Cardinal Red Cast 5-Quart Iron Casserole", "type": "Casserole dish", "desc": "5-quart enameled cast iron casserole in cardinal red", "price": 94.95, "conf": "verified", "note": "Macy's shows $94.95, matches. Product is Chef's Classic 5 Qt round casserole, Cardinal Red", "tag": "", "img": "fcsfozjryns4xltjw5s1"}, {"id": 43, "cat": "Cookware & cutlery", "brand": "Zwilling", "name": "ZWILLING Peak 2-pc Stainless Steel Nonstick Fry Pan Set", "type": "Fry pan set", "desc": "2-piece tri-ply stainless steel ceramic nonstick fry pan set", "price": 149.99, "conf": "verified", "note": "Matches $149.99 sale price", "tag": "", "img": "wpmtgf4kbjanmbhkcwij"}, {"id": 44, "cat": "Health, beauty & personal care", "brand": "Manscaped", "name": "Manscaped The Lawn Mower 5.0 Ultra Hair Trimmer Essentials Kit", "type": "Body trimmer kit", "desc": "Body hair trimmer essentials kit with interchangeable dual-head system", "price": 90.0, "conf": "approx", "note": "Farm and Fleet shows $109.99; Selfridges US $164.00. Manscaped brand page not found", "tag": "", "img": "skoaw8xgc4yacb2log5v"}, {"id": 45, "cat": "Health, beauty & personal care", "brand": "GLO24K", "name": "GLO24K 6-IN-1 Beauty Therapy Wand", "type": "Beauty wand", "desc": "6-in-1 facial beauty therapy wand", "price": 99.99, "conf": "verified", "note": "Target shows $79.99 vs $99.99. Brand page not found", "tag": "", "img": "mm4mzaqv6lwsseoqrk6g"}, {"id": 46, "cat": "Cameras & smart gadgets", "brand": "REOLINK", "name": "Reolink Altas Series B630 2K 4MP Battery Security Camera Wireless WiFi", "type": "Security camera", "desc": "2K wireless battery security camera for indoor and outdoor use", "price": 112.99, "conf": "approx", "note": "Best Buy about $110 to $113 (one listing includes 64GB SD card); Staples about $97", "tag": "", "img": "jxip3n6rzefppsgsdmnd"}, {"id": 47, "cat": "Kitchen appliances", "brand": "MARTHA STEWART", "name": "Martha Stewart 5.3qt Stand Mixer", "type": "Stand mixer", "desc": "5.3-quart stand mixer with stainless steel bowl", "price": 149.99, "conf": "approx", "note": "Kohl's shows $149.99 sale ($199.99 reg), matches", "tag": "", "img": "c5xezrsvrqngjnwn3myi"}, {"id": 48, "cat": "Bags, travel & accessories", "brand": "Samsonite", "name": "Samsonite Mobile Solution 2 Tote", "type": "Laptop tote", "desc": "Tote bag with removable padded laptop sleeve and organizer pockets", "price": 109.99, "conf": "verified", "note": "Samsonite US shows $87.99 (20% off $109.99) vs $109.99; other retailers $109.99", "tag": "", "img": "tjczhba0m0cr51jlporc"}, {"id": 49, "cat": "Sports, outdoors & hobbies", "brand": "(none listed)", "name": "National Geographic Astronomy Kit - 70mm Telescope with Exclusive App", "type": "Telescope", "desc": "70mm refractor telescope with companion astronomy app", "price": 149.99, "conf": "verified", "note": "Retail listings range about 99.99 to 149.99; sold as StarApp70 (Explore Scientific makes it)", "tag": "", "img": "rafpltvz5kqn9exwmxh2"}, {"id": 50, "cat": "Kitchen appliances", "brand": "Brentwood", "name": "Brentwood 24-Quart Convection Air Fryer Toaster Oven", "type": "Air fryer oven", "desc": "24-quart convection air fryer toaster oven", "price": 140.99, "conf": "verified", "note": "Search showed Target list price near 270.39 and resellers from about 107; model AF-2410S", "tag": "", "img": "gcqvvw7ug6xx5nz3rn6d"}, {"id": 51, "cat": "Kitchen appliances", "brand": "CUCKOO", "name": "CUCKOO Micom 6-Cup Rice Cooker with Auto Clean", "type": "Rice cooker", "desc": "6-cup micom rice cooker with auto clean", "price": 84.99, "conf": "verified", "note": "Closest match is CR-0675F 6-cup; no price seen on page; exact model unconfirmed", "tag": "", "img": "hensjlq38wvdssk0boo1"}, {"id": 52, "cat": "Bags, travel & accessories", "brand": "Pandora", "name": "Pandora Elongated Link Chain Necklace, 28\"", "type": "Necklace", "desc": "Sterling silver elongated link chain necklace, 28 inch, adjustable", "price": 85.0, "conf": "approx", "note": "Pandora Canada page; sterling silver 393416C00 adjusts to 70 cm (about 27.6 in); no US price seen", "tag": "", "img": "nfoyxkdv8ovouxhuuic8"}, {"id": 53, "cat": "Bags, travel & accessories", "brand": "AMERICAN TOURISTER", "name": "American Tourister Stratum 3.0 Hardside Medium Spinner", "type": "Hardside suitcase", "desc": "Medium hardside spinner suitcase with trolley system", "price": 129.99, "conf": "verified", "note": "Luggagebase lists black at 129.99; Target page price not confirmed", "tag": "", "img": "c0nzgrtoav5wadfgdhyu"}, {"id": 54, "cat": "Health, beauty & personal care", "brand": "CHI", "name": "CHI Volumizer 4-in-1 Blowout Brush", "type": "Blowout brush", "desc": "4-in-1 volumizing hot brush for salon-style blowouts", "price": 106.99, "conf": "verified", "note": "CHI and Kohl's list 102.99 (vs 106.99)", "tag": "", "img": "gnzzrhfzjwee7mk0ondn"}, {"id": 55, "cat": "Cookware & cutlery", "brand": "LE CREUSET", "name": "Le Creuset 9\" Stoneware Pumpkin Baker w/ Lid", "type": "Pumpkin baker", "desc": "9-inch stoneware pumpkin-shaped baking dish with lid", "price": 124.95, "conf": "verified", "note": "124.95 matches", "tag": "", "img": "vvuuwjx0lnj0ztwvtrwj"}, {"id": 56, "cat": "Kitchen appliances", "brand": "Cuisinart", "name": "Cuisinart Double Flip Belgian Waffle Maker", "type": "Waffle maker", "desc": "Rotating Belgian waffle maker that bakes two waffles", "price": 119.95, "conf": "verified", "note": "119.95 matches (model WAF-F40)", "tag": "", "img": "xiv5nvkopecrjnrhug2p"}, {"id": 57, "cat": "Drinkware & entertaining", "brand": "YETI", "name": "YETI Navy Flask and Shot Glasses Kit", "type": "Flask set", "desc": "Stainless steel flask and shot glasses kit", "price": 100.0, "conf": "approx", "note": "Shot glasses and case page, about 50; flask sold separately, no single kit SKU found", "tag": "", "img": "v4lmmvybeamtn0bwig8f"}, {"id": 58, "cat": "Kitchen appliances", "brand": "Elite Gourmet", "name": "Elite Gourmet 6qt Old Fashioned Electric Ice Cream Maker", "type": "Ice cream maker", "desc": "6-quart old-fashioned electric ice cream maker", "price": 68.75, "conf": "verified", "note": "Academy lists a similar model at 179.99; exact model unconfirmed", "tag": "", "img": "kysrtoy1zevctqyfltib"}, {"id": 59, "cat": "Cameras & smart gadgets", "brand": "ring", "name": "Ring Battery Doorbell 2K (Newest Model) + Indoor Cam Plus", "type": "Doorbell camera", "desc": "2K battery video doorbell with indoor cam bundle", "price": 69.99, "conf": "verified", "note": "Deal sites show about 69.99; list price reported 159.98", "tag": "", "img": "tkjprrepo8caj79vxgph"}, {"id": 60, "cat": "Drinkware & entertaining", "brand": "Corkcicle", "name": "Corkcicle Beverage Bucket Bag, Black", "type": "Drink cooler bag", "desc": "Insulated beverage bag that doubles as an ice bucket", "price": 149.95, "conf": "verified", "note": "149.95 matches; page showed coming soon", "tag": "", "img": "e66wsglucnm1fjmnllrf"}, {"id": 61, "cat": "Health, beauty & personal care", "brand": "Tzumi", "name": "Tzumi 7-in-1 Red Light Therapy Hair Dryer", "type": "Hair dryer", "desc": "7-in-1 hair dryer with red light therapy and ionic technology", "price": 139.99, "conf": "verified", "note": "Sold as SLF Red Light Therapy 7-in-1 Air Styler; $139.99 matches", "tag": "", "img": "yf7oei8vtpbzyzb6xqgh"}, {"id": 62, "cat": "Sports, outdoors & hobbies", "brand": "Yukon Outfitters", "name": "Yukon Outfitters 30 Can Tech Cooler, Mossy Oak Original Bottomland", "type": "Soft cooler", "desc": "Lightweight 30-can cooler in Mossy Oak camo", "price": 129.99, "conf": "verified", "note": "Listed at $149.99 vs $129.99; other retailers $103.99-$149.99; line may be discontinued", "tag": "", "img": "xccojkyhdvso8q2kwd9u"}, {"id": 63, "cat": "Health, beauty & personal care", "brand": "Drybar", "name": "Drybar Brush Crush Heated Straightening Brush", "type": "Straightening brush", "desc": "Heated brush that straightens and smooths hair", "price": 149.0, "conf": "verified", "note": "", "tag": "", "img": "dh9yr7ttixhcb6v4yzba"}, {"id": 64, "cat": "Sports, outdoors & hobbies", "brand": "FitRx", "name": "FitRx Vibrating Board Full-Body Exercise Platform", "type": "Vibration plate", "desc": "Vibrating exercise platform with arm resistance bands", "price": 119.99, "conf": "approx", "note": "No FitRx listing found", "tag": "", "img": "rhlrnofjuomfq1f5ufik"}, {"id": 65, "cat": "Sports, outdoors & hobbies", "brand": "Nettie", "name": "Nettie Starter Pickleball Set 4-Pack", "type": "Pickleball set", "desc": "Starter set with 4 paddles and 4 pickleballs", "price": 209.99, "conf": "verified", "note": "Listed at $249.99 vs $209.99 (other retailer shows $209.99 on sale)", "tag": "Woman-Owned", "img": "i3eenrm2pm95x1zz9lmr"}, {"id": 66, "cat": "TV, audio & gaming", "brand": "Crosley", "name": "Presley Tabletop Jukebox Bluetooth Radio", "type": "Jukebox radio", "desc": "Tabletop jukebox with Bluetooth and AM/FM radio", "price": 207.99, "conf": "verified", "note": "CR1102A-WA walnut, $207.99 matches", "tag": "", "img": "aemrv4zken5siom7uwoi"}, {"id": 67, "cat": "Home, cleaning & tools", "brand": "CUCKOO", "name": "CUCKOO HEPA Air Purifier", "type": "Air purifier", "desc": "True HEPA air purifier with smart sensor for small spaces", "price": 129.99, "conf": "approx", "note": "No exact model identified; CUCKOO has many HEPA models", "tag": "", "img": "aa1ufqscxqwucyhgw3tt"}, {"id": 68, "cat": "Bags, travel & accessories", "brand": "Quince", "name": "Quince Kaia Crossbody Bag", "type": "Crossbody bag", "desc": "Italian leather crossbody bag", "price": 104.0, "conf": "verified", "note": "$104.00 matches", "tag": "Sustainable", "img": "y6tudom9mevkymyqfz4z"}, {"id": 69, "cat": "Home, cleaning & tools", "brand": "PURSONIC", "name": "Pursonic Luxury Bucket Towel Warmer", "type": "Towel warmer", "desc": "Bucket-style luxury towel warmer", "price": 124.99, "conf": "verified", "note": "Target sale $119.98 (reg $199.98); Brookstone lists $149.99", "tag": "", "img": "gjj59stj0nm68bm2ym9r_picture-1.jpg"}, {"id": 70, "cat": "Drinkware & entertaining", "brand": "YETI", "name": "YETI Rambler 12 oz. Colster Can Insulators (4-Pack)", "type": "Can insulators", "desc": "Set of four insulated sleeves for 12 oz cans", "price": 25.0, "conf": "verified", "note": "Only single Colster pages found, no 4-pack (single about $25 at Ace)", "tag": "", "img": "l6zzteaftrdc1hesdoby"}, {"id": 71, "cat": "Sports, outdoors & hobbies", "brand": "Oniva", "name": "Oniva X-Grill 2.0 Portable Charcoal BBQ Grill", "type": "Charcoal grill", "desc": "Portable charcoal BBQ grill", "price": 119.95, "conf": "verified", "note": "$119.95 matches", "tag": "", "img": "v1dtghxonjrk5xg4qely"}, {"id": 72, "cat": "Kitchen appliances", "brand": "Brentwood", "name": "Brentwood 700W Electric Meat Grinder - Stainless Steel", "type": "Meat grinder", "desc": "Stainless steel electric meat grinder with sausage stuffer", "price": 99.99, "conf": "approx", "note": "No 700W Brentwood grinder found; closest is MG-1800S", "tag": "", "img": "bpujq9bkiok5qatb2ykx"}];
+const CAT_ORDER = ["Donations","Kitchen appliances","Cookware & cutlery","Drinkware & entertaining","Home, cleaning & tools","TV, audio & gaming","Cameras & smart gadgets","Health, beauty & personal care","Bags, travel & accessories","Sports, outdoors & hobbies"];
+const KEY = "snappy-picker-dont-v1";
+
+let dont = new Set();
+try { dont = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...dont])); } catch (e) {} };
+
+let view = "want", sortKey = "cat", sortDir = 1;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const imgUrl = d => `https://image.snappy.com/${d.img}?width=200&height=200&format=webp&background=white`;
+
+function priceText(d) {
+  if (d.price == null) return d.id === 1 ? "" : "N/A";
+  const n = d.price.toLocaleString("en-US", { minimumFractionDigits: d.price % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  return (d.conf === "verified" ? "$" : "~$") + n;
+}
+function priceTitle(d) {
+  const bits = [d.conf === "verified" ? "Seen in a search result" : d.conf === "approx" ? "Estimate" : "Unknown"];
+  if (d.note) bits.push(d.note);
+  return bits.join(". ");
+}
+
+CAT_ORDER.forEach(c => { const o = document.createElement("option"); o.value = c; o.textContent = c; $("cat").appendChild(o); });
+
+function cmp(a, b) {
+  let r;
+  if (sortKey === "price") {
+    const x = a.price, y = b.price;
+    if (x == null && y == null) r = 0; else if (x == null) return 1; else if (y == null) return -1; else r = x - y;
+  } else if (sortKey === "cat") {
+    r = CAT_ORDER.indexOf(a.cat) - CAT_ORDER.indexOf(b.cat);
+    if (r === 0) r = a.type.localeCompare(b.type);
+  } else r = a[sortKey].localeCompare(b[sortKey], undefined, { sensitivity: "base" });
+  return r * sortDir || a.id - b.id;
+}
+
+function render() {
+  const q = $("q").value.trim().toLowerCase(), cat = $("cat").value;
+  const inView = DATA.filter(d => (view === "want") === !dont.has(d.id));
+  const rows = inView.filter(d => (!cat || d.cat === cat) && (!q || [d.type, d.desc, d.name, d.brand, d.cat].join(" ").toLowerCase().includes(q))).sort(cmp);
+  $("n-want").textContent = DATA.length - dont.size;
+  $("n-dont").textContent = dont.size;
+  $("rows").innerHTML = rows.map(d => `
+    <tr>
+      <td class="cat">${esc(d.cat)}</td>
+      <td class="img"><img loading="lazy" src="${imgUrl(d)}" alt="${esc(d.name)}" onerror="this.style.visibility='hidden'"></td>
+      <td class="type">${esc(d.type)}</td>
+      <td class="desc">${esc(d.desc)}</td>
+      <td class="price" title="${esc(priceTitle(d))}">${esc(priceText(d))}</td>
+      <td class="act"><button class="mv ${view === "want" ? "no" : "yes"}" data-id="${d.id}">${view === "want" ? "Don't want" : "Move back to want"}</button></td>
+    </tr>`).join("");
+  const e = $("empty");
+  e.hidden = rows.length > 0;
+  if (!rows.length) e.textContent = inView.length ? "No items match your search or filter." : view === "want" ? "Nothing left in Want." : "Nothing in Don't want yet.";
+  document.querySelectorAll("th.sortable").forEach(th => {
+    if (th.dataset.k === sortKey) { th.setAttribute("aria-sort", sortDir > 0 ? "ascending" : "descending"); th.querySelector(".arr").innerHTML = sortDir > 0 ? "&#9650;" : "&#9660;"; }
+    else { th.removeAttribute("aria-sort"); th.querySelector(".arr").innerHTML = "&#8597;"; }
+  });
+}
+
+$("rows").addEventListener("click", ev => {
+  const b = ev.target.closest(".mv"); if (!b) return;
+  const id = +b.dataset.id;
+  dont.has(id) ? dont.delete(id) : dont.add(id);
+  save(); render();
+});
+document.querySelectorAll("th.sortable").forEach(th => th.addEventListener("click", () => {
+  const k = th.dataset.k; if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = 1; }
+  render();
+}));
+function setView(v) { view = v; $("tab-want").setAttribute("aria-selected", v === "want"); $("tab-dont").setAttribute("aria-selected", v === "dont"); render(); }
+$("tab-want").onclick = () => setView("want");
+$("tab-dont").onclick = () => setView("dont");
+$("q").addEventListener("input", render);
+$("cat").addEventListener("change", render);
+render();
+</script>
+</body>
+</html>
